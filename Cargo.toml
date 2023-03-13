@@ -9,3 +9,4 @@ license = "MIT"
 
 [dependencies]
 bevy = "0.10.0"
+enum-iterator = "1.4.0"
