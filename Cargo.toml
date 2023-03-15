@@ -1,9 +1,10 @@
 [package]
 name = "devcaders"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Devcade input support library for Bevy+Rust!"
 license = "MIT"
+repository = "https://github.com/Mstrodl/devcaders"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
