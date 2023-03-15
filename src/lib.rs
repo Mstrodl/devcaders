@@ -170,7 +170,7 @@ impl DevcadeControls {
   }
 }
 
-#[derive(Clone, Copy, Sequence)]
+#[derive(Clone, Copy, Sequence, PartialEq, Eq)]
 /// Gamepad buttons
 pub enum Button {
   /// Top row, first button. Red
@@ -289,7 +289,7 @@ impl From<PlayerButton> for KeyCode {
   }
 }
 
-#[derive(Clone, Copy, Sequence)]
+#[derive(Clone, Copy, Sequence, PartialEq, Eq)]
 /// Used to specify which player's controls to query
 pub enum Player {
   /// First player, left set of controls
