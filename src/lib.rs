@@ -289,7 +289,7 @@ impl From<PlayerButton> for KeyCode {
   }
 }
 
-#[derive(Clone, Copy, Sequence, PartialEq, Eq)]
+#[derive(Clone, Copy, Sequence, PartialEq, Eq, Component)]
 /// Used to specify which player's controls to query
 pub enum Player {
   /// First player, left set of controls

@@ -1,6 +1,6 @@
 [package]
 name = "devcaders"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 description = "Devcade input support library for Bevy+Rust!"
 license = "MIT"
@@ -9,5 +9,5 @@ repository = "https://github.com/Mstrodl/devcaders"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.10.0"
+bevy = {version = "0.10.0", default-features=false}
 enum-iterator = "1.4.0"
