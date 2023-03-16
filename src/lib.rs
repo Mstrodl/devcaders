@@ -272,14 +272,14 @@ impl From<PlayerButton> for KeyCode {
       (Player::P1, Button::StickLeft) => KeyCode::V,
       (Player::P1, Button::StickRight) => KeyCode::N,
 
-      (Player::P2, Button::A1) => KeyCode::Q,
-      (Player::P2, Button::A2) => KeyCode::W,
-      (Player::P2, Button::A3) => KeyCode::E,
-      (Player::P2, Button::A4) => KeyCode::R,
-      (Player::P2, Button::B1) => KeyCode::A,
-      (Player::P2, Button::B2) => KeyCode::S,
-      (Player::P2, Button::B3) => KeyCode::D,
-      (Player::P2, Button::B4) => KeyCode::F,
+      (Player::P2, Button::A1) => KeyCode::Y,
+      (Player::P2, Button::A2) => KeyCode::U,
+      (Player::P2, Button::A3) => KeyCode::I,
+      (Player::P2, Button::A4) => KeyCode::O,
+      (Player::P2, Button::B1) => KeyCode::H,
+      (Player::P2, Button::B2) => KeyCode::J,
+      (Player::P2, Button::B3) => KeyCode::K,
+      (Player::P2, Button::B4) => KeyCode::L,
       (Player::P2, Button::Menu) => KeyCode::Escape,
       (Player::P2, Button::StickUp) => KeyCode::Up,
       (Player::P2, Button::StickDown) => KeyCode::Down,
@@ -335,6 +335,22 @@ impl<'w> DevcadeControlsInner<'w> {
       self
         .keyboard_input
         .pressed(KeyCode::from(PlayerButton { button, player }))
+    }
+  }
+}
+
+/// Close the focused window when both menu buttons are pressed.
+pub fn close_on_menu_buttons(
+  mut commands: Commands,
+  focused_windows: Query<(Entity, &Window)>,
+  input: DevcadeControls,
+) {
+  for (window, focus) in focused_windows.iter() {
+    if !focus.focused {
+      continue;
+    }
+    if input.pressed(Player::P1, Button::Menu) && input.pressed(Player::P2, Button::Menu) {
+      commands.entity(window).despawn();
     }
   }
 }
