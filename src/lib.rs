@@ -2,9 +2,19 @@
 //!
 //! # Input Handling
 //! See [The example for `DevcadeControls`](DevcadeControls#examples)
+use async_compat::Compat;
 use bevy::ecs::system::{SystemMeta, SystemParam};
 use bevy::prelude::*;
+use bevy::tasks::{AsyncComputeTaskPool, Task};
+pub use devcade_onboard_types;
+use devcade_onboard_types::{Map, Player as BackendPlayer, RequestBody, ResponseBody, Value};
 use enum_iterator::Sequence;
+use futures_lite::future;
+use std::ops::Deref;
+use std::sync::OnceLock;
+
+mod client;
+pub use client::{BackendClient, RequestError};
 
 #[derive(SystemParam)]
 struct DevcadeControlsInner<'w> {
@@ -352,5 +362,136 @@ pub fn close_on_menu_buttons(
     if input.pressed(Player::P1, Button::Menu) && input.pressed(Player::P2, Button::Menu) {
       commands.entity(window).despawn();
     }
+  }
+}
+
+struct CellWrapper<T>(OnceLock<T>);
+impl<T> CellWrapper<T> {
+  const fn new() -> Self {
+    Self(OnceLock::new())
+  }
+}
+
+impl Deref for CellWrapper<BackendClient> {
+  type Target = BackendClient;
+  fn deref(&self) -> &Self::Target {
+    self.0.get_or_init(Self::Target::default)
+  }
+}
+
+static CLIENT: CellWrapper<BackendClient> = CellWrapper::new();
+
+/// Represents an inflight request to the backend for NFC tags on the reader
+/// You can spawn an entity with this component to poll the request:
+///
+/// # Example
+/// ```
+/// #[derive(Component, Deref, DerefMut)]
+/// struct MyNfcTagRequest(NfcTagRequestComponent);
+/// fn nfc_system(mut commands: Commands, mut tags_request: Query<(&mut MyNfcTagRequest, Entity)>) {
+///   for (mut tags_request, id) in &mut tags_request {
+///     if let Some(tag) = tags_request.poll() {
+///       println!("Got a response! {tag:?}");
+///       commands.entity(id).despawn();
+///     }
+///   }
+///   if tags_request.is_empty() {
+///     println!("Creating a new request...");
+///     commands.spawn(MyNfcTagRequest(NfcTagRequestComponent::new()));
+///   }
+/// }
+/// ```
+#[derive(Component)]
+pub struct NfcTagRequestComponent(Task<Result<Option<String>, RequestError>>);
+impl Default for NfcTagRequestComponent {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
+impl NfcTagRequestComponent {
+  /// Creates a new `NfcTagRequestComponent`
+  pub fn new() -> Self {
+    let pool = AsyncComputeTaskPool::get();
+    Self(pool.spawn(Compat::new(async move {
+      CLIENT
+        .send(RequestBody::GetNfcTag(BackendPlayer::P1))
+        .await
+        .and_then(|response_body| match response_body {
+          ResponseBody::NfcTag(tag_id) => Ok(tag_id),
+          body => Err(RequestError::UnexpectedResponse(body)),
+        })
+    })))
+  }
+  /// Check if this request has completed.
+  /// If it has, the return value will be `Some` with either the
+  /// assocation ID as a `String` or `None` if no tags were on the reader
+  pub fn poll(&mut self) -> Option<Result<Option<String>, RequestError>> {
+    future::block_on(future::poll_once(&mut self.0))
+  }
+}
+
+/// Represents an inflight request to the backend for the user associated with
+/// a particular NFC tag assocation id
+///
+/// You can spawn an entity with this component to poll the request:
+/// # Example
+/// ```
+/// #[derive(Component, Deref, DerefMut)]
+/// struct MyNfcTagRequest(NfcTagRequestComponent);
+/// #[derive(Component, Deref, DerefMut)]
+/// struct MyNfcUserRequest(NfcUserRequestComponent);
+/// fn nfc_system(
+///   mut commands: Commands,
+///   mut tags_request: Query<(&mut MyNfcTagRequest, Entity)>
+///   mut users_request: Query<(&mut MyNfcUserRequest, Entity)>
+/// ) {
+///   for (mut tags_request, id) in &mut tags_request {
+///     if let Some(tag) = tags_request.poll() {
+///       println!("Got a response! {tag:?}");
+///       commands.entity(id).despawn();
+///       if let Ok(Some(tag_id)) = tag {
+///         commands.spawn(MyNfcUserRequest(NfcUserRequestComponent::new(tag));
+///       }
+///     }
+///   }
+///   for (mut users_request, id) in &mut users_request {
+///     if let Some(user) = users_request.poll() {
+///       println!("Got a response! {user:?}");
+///       commands.entity(id).despawn();
+///       if let Ok(user) = user {
+///         println!("Username is: {}", user["uid"].as_str().unwrap());
+///       }
+///     }
+///   }
+///   if tags_request.is_empty() && users_request.is_empty() {
+///     println!("Creating a new request...");
+///     commands.spawn(MyNfcTagRequest(NfcTagRequestComponent::new()));
+///   }
+/// }
+/// ```
+#[derive(Component)]
+pub struct NfcUserRequestComponent(Task<Result<Map<String, Value>, RequestError>>);
+
+impl NfcUserRequestComponent {
+  /// Creates a new `NfcUserRequestComponent`
+  pub fn new(association_id: String) -> Self {
+    let pool = AsyncComputeTaskPool::get();
+    Self(pool.spawn(Compat::new(async move {
+      CLIENT
+        .send(RequestBody::GetNfcUser(association_id))
+        .await
+        .and_then(|response_body| match response_body {
+          ResponseBody::NfcUser(value) => Ok(value),
+          body => Err(RequestError::UnexpectedResponse(body)),
+        })
+    })))
+  }
+
+  /// Check if this request has completed.
+  /// If it has, the return value will be a `Result` with either list of the
+  /// user's attributes or a [`RequestError`] explaining why the request failed
+  pub fn poll(&mut self) -> Option<Result<Map<String, Value>, RequestError>> {
+    future::block_on(future::poll_once(&mut self.0))
   }
 }
