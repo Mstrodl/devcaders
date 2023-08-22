@@ -13,7 +13,9 @@ use futures_lite::future;
 use std::ops::Deref;
 use std::sync::OnceLock;
 
+#[cfg(not(target_os = "windows"))]
 mod client;
+#[cfg(not(target_os = "windows"))]
 pub use client::{BackendClient, RequestError};
 
 #[derive(SystemParam)]
@@ -372,6 +374,7 @@ impl<T> CellWrapper<T> {
   }
 }
 
+#[cfg(not(target_os = "windows"))]
 impl Deref for CellWrapper<BackendClient> {
   type Target = BackendClient;
   fn deref(&self) -> &Self::Target {
@@ -379,6 +382,7 @@ impl Deref for CellWrapper<BackendClient> {
   }
 }
 
+#[cfg(not(target_os = "windows"))]
 static CLIENT: CellWrapper<BackendClient> = CellWrapper::new();
 
 /// Represents an inflight request to the backend for NFC tags on the reader
@@ -402,13 +406,16 @@ static CLIENT: CellWrapper<BackendClient> = CellWrapper::new();
 /// }
 /// ```
 #[derive(Component)]
+#[cfg(not(target_os = "windows"))]
 pub struct NfcTagRequestComponent(Task<Result<Option<String>, RequestError>>);
+#[cfg(not(target_os = "windows"))]
 impl Default for NfcTagRequestComponent {
   fn default() -> Self {
     Self::new()
   }
 }
 
+#[cfg(not(target_os = "windows"))]
 impl NfcTagRequestComponent {
   /// Creates a new `NfcTagRequestComponent`
   pub fn new() -> Self {
@@ -471,8 +478,10 @@ impl NfcTagRequestComponent {
 /// }
 /// ```
 #[derive(Component)]
+#[cfg(not(target_os = "windows"))]
 pub struct NfcUserRequestComponent(Task<Result<Map<String, Value>, RequestError>>);
 
+#[cfg(not(target_os = "windows"))]
 impl NfcUserRequestComponent {
   /// Creates a new `NfcUserRequestComponent`
   pub fn new(association_id: String) -> Self {
