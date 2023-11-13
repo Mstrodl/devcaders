@@ -3,7 +3,9 @@
 //! # Input Handling
 //! See [The example for `DevcadeControls`](DevcadeControls#examples)
 use async_compat::Compat;
+use bevy::ecs::component::Tick;
 use bevy::ecs::system::{SystemMeta, SystemParam};
+use bevy::ecs::world::unsafe_world_cell::UnsafeWorldCell;
 use bevy::prelude::*;
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 pub use devcade_onboard_types;
@@ -133,8 +135,8 @@ unsafe impl SystemParam for DevcadeControls {
   unsafe fn get_param<'w, 's>(
     state: &'s mut Self::State,
     system_meta: &SystemMeta,
-    world: &'w World,
-    change_tick: u32,
+    world: UnsafeWorldCell<'w>,
+    change_tick: Tick,
   ) -> Self::Item<'w, 's> {
     let inner = DevcadeControlsInner::get_param(&mut state.inner, system_meta, world, change_tick);
     for player in enum_iterator::all::<Player>() {

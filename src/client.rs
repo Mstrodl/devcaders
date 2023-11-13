@@ -63,7 +63,7 @@ impl Default for BackendClient {
 impl BackendClient {
   async fn create_connection() -> Result<SynchronizedConnection, io::Error> {
     let (connection_reader, mut connection_writer) = UnixStream::connect(
-      std::env::var("DEVCADE_ONBOARD_PATH").unwrap_or("/tmp/devcade/onboard.sock".to_owned()),
+      std::env::var("DEVCADE_ONBOARD_PATH").unwrap_or("/tmp/devcade/game.sock".to_owned()),
     )
     .await?
     .into_split();
